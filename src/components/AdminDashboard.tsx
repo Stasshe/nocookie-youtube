@@ -110,6 +110,9 @@ export default function AdminDashboard() {
                   最終活動
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  次回リセット
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作
                 </th>
               </tr>
@@ -119,6 +122,20 @@ export default function AdminDashboard() {
                 const timeLimit = user.timeLimit ? user.timeLimit * 60 : null; // 分を秒に変換
                 const remainingTime = timeLimit ? timeLimit - user.watchTime : null;
                 const isOverLimit = remainingTime !== null && remainingTime <= 0;
+                
+                // 次回リセット時刻を計算
+                const getNextResetTime = () => {
+                  const now = new Date();
+                  const nextReset = new Date();
+                  nextReset.setUTCHours(4, 0, 0, 0); // GMT 4:00
+                  
+                  // 現在時刻が4時以降の場合は翌日の4時
+                  if (now.getUTCHours() >= 4) {
+                    nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+                  }
+                  
+                  return nextReset;
+                };
                 
                 return (
                   <tr key={username} className={isOverLimit ? 'bg-red-50' : ''}>
@@ -142,6 +159,9 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : 'なし'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getNextResetTime().toLocaleString('ja-JP')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <button

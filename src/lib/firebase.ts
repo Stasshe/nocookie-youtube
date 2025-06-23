@@ -11,13 +11,5 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-console.log('🔧 Firebase設定を確認:', {
-  projectId: firebaseConfig.projectId,
-  databaseURL: firebaseConfig.databaseURL,
-  apiKey: firebaseConfig.apiKey ? '設定済み' : '未設定',
-});
-
 const app = initializeApp(firebaseConfig);
 export const database = getDatabase(app);
-
-console.log('✅ Firebase初期化完了');

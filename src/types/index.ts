@@ -11,6 +11,7 @@ export interface User {
   watchTime: number;
   lastActive: number;
   timeLimit?: number; // 分単位での制限時間
+  lastReset?: number; // 最後にリセットされた時刻
 }
 
 export interface WatchSession {

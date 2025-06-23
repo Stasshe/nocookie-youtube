@@ -49,6 +49,26 @@ export default function Home() {
     setActiveTabId('1');
   };
 
+  // GMT+0 4時（日本時間13時）のリセット時刻を計算
+  const getTodayResetTime = () => {
+    const now = new Date();
+    const resetTime = new Date();
+    resetTime.setUTCHours(4, 0, 0, 0); // GMT 4:00
+    
+    // 現在時刻が4時より前の場合は前日の4時を返す
+    if (now.getUTCHours() < 4) {
+      resetTime.setUTCDate(resetTime.getUTCDate() - 1);
+    }
+    
+    return resetTime.getTime();
+  };
+
+  // 視聴時間がリセットされるべきかチェック
+  const shouldResetWatchTime = (lastActive: number) => {
+    const todayResetTime = getTodayResetTime();
+    return lastActive < todayResetTime;
+  };
+
   // ユーザーデータの監視
   useEffect(() => {
     if (!username || isAdmin) return;
@@ -60,9 +80,34 @@ export default function Home() {
       console.log('Firebaseからユーザーデータを取得:', userData);
       
       if (userData) {
-        setWatchTime(userData.watchTime || 0);
-        setTimeLimit(userData.timeLimit ? userData.timeLimit * 60 : null); // 分を秒に変換
-        console.log('視聴時間を更新:', userData.watchTime || 0, '秒');
+        const lastActive = userData.lastActive || 0;
+        const shouldReset = shouldResetWatchTime(lastActive);
+        
+        if (shouldReset) {
+          console.log('🔄 GMT4時を過ぎているため視聴時間をリセットします');
+          console.log('前回アクティブ:', new Date(lastActive).toISOString());
+          console.log('今日のリセット時刻:', new Date(getTodayResetTime()).toISOString());
+          
+          // 視聴時間をリセットしてFirebaseに保存
+          const resetData = {
+            ...userData,
+            watchTime: 0,
+            lastActive: Date.now(),
+            lastReset: Date.now()
+          };
+          
+          set(userRef, resetData).then(() => {
+            console.log('✅ 視聴時間をリセットしました');
+            setWatchTime(0);
+            setTimeLimit(userData.timeLimit ? userData.timeLimit * 60 : null);
+          }).catch((error) => {
+            console.error('❌ 視聴時間のリセットに失敗しました:', error);
+          });
+        } else {
+          setWatchTime(userData.watchTime || 0);
+          setTimeLimit(userData.timeLimit ? userData.timeLimit * 60 : null);
+          console.log('視聴時間を更新:', userData.watchTime || 0, '秒');
+        }
       } else {
         // 初回ユーザーの場合、初期データを作成
         console.log('初回ユーザーです。初期データを作成します。');
@@ -70,7 +115,8 @@ export default function Home() {
           username,
           watchTime: 0,
           lastActive: Date.now(),
-          timeLimit: null
+          timeLimit: null,
+          lastReset: Date.now()
         };
         
         set(userRef, initialData).then(() => {
@@ -97,21 +143,21 @@ export default function Home() {
       // 現在のwatchTimeを直接Firebaseから取得して更新
       const userRef = ref(database, `users/${username}`);
       
-      // まずは現在の値を取得
-      const currentTimeRef = ref(database, `users/${username}/watchTime`);
-      
       setWatchTime(prevWatchTime => {
         const newWatchTime = prevWatchTime + addTime;
         console.log('視聴時間を更新中:', prevWatchTime, '+', addTime, '=', newWatchTime);
         
-        // Firebaseに保存
+        // Firebaseに保存（lastResetも更新）
         set(userRef, {
           username,
           watchTime: newWatchTime,
           lastActive: Date.now(),
-          timeLimit: timeLimit ? timeLimit / 60 : null
+          timeLimit: timeLimit ? timeLimit / 60 : null,
+          lastReset: Date.now() // リセット時刻も記録
         }).then(() => {
           console.log('✅ 視聴時間を保存しました:', newWatchTime, '秒');
+          console.log('📅 現在時刻:', new Date().toISOString());
+          console.log('⏰ 次回リセット予定:', new Date(getTodayResetTime() + 24 * 60 * 60 * 1000).toISOString());
         }).catch((error) => {
           console.error('❌ 視聴時間の保存に失敗しました:', error);
         });
@@ -141,18 +187,6 @@ export default function Home() {
     localStorage.setItem('youtube-username', inputUsername);
     setIsModalOpen(false);
     initializeTabs();
-    
-    // Firebase接続テスト
-    console.log('🔧 Firebase接続テストを実行します');
-    const testRef = ref(database, `test/${inputUsername}`);
-    set(testRef, {
-      test: true,
-      timestamp: Date.now()
-    }).then(() => {
-      console.log('✅ Firebase接続テスト成功');
-    }).catch((error) => {
-      console.error('❌ Firebase接続テスト失敗:', error);
-    });
   };
 
   const handleUrlSubmit = (url: string) => {
