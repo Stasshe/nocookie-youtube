@@ -33,7 +33,7 @@ export const formatTime = (seconds: number): string => {
 };
 
 export const isAdminUser = (username: string): boolean => {
-  return username === process.env.ADMIN_USERNAME || username === 'Admin_Manager';
+  return username === process.env.NEXT_PUBLIC_ADMIN_USERNAME;
 };
 
 export const isValidAdminKey = (key: string): boolean => {

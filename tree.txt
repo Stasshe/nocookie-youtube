@@ -17,6 +17,9 @@
 │   ├── app
 │   │   ├── admin
 │   │   │   └── page.tsx
+│   │   ├── api
+│   │   │   └── validate-key
+│   │   │       └── route.ts
 │   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── layout.tsx
@@ -24,6 +27,7 @@
 │   ├── components
 │   │   ├── AddressBar.tsx
 │   │   ├── AdminDashboard.tsx
+│   │   ├── AdminKeyModal.tsx
 │   │   ├── Instructions.tsx
 │   │   ├── TabBar.tsx
 │   │   └── UsernameModal.tsx
@@ -38,9 +42,9 @@
 ├── tree.txt
 └── tsconfig.json
 
-9 directories, 30 files
+11 directories, 32 files
 
 src/*.ts, *.tsx の統計:
-合計行数: 801
-合計文字数: 25311
-合計ファイルサイズ(bytes): 26925
+合計行数: 1114
+合計文字数: 36249
+合計ファイルサイズ(bytes): 38786
