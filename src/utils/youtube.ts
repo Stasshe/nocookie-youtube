@@ -1,4 +1,18 @@
 export const extractVideoId = (url: string): string | null => {
+  // NetStarなどのURLブロッキングシステムの場合、urldataパラメータから実際のURLを抽出
+  if (url.includes('urldata=')) {
+    try {
+      const urldataMatch = url.match(/urldata=([^&]+)/);
+      if (urldataMatch && urldataMatch[1]) {
+        const decodedUrl = decodeURIComponent(urldataMatch[1]);
+        // 再帰的に実際のYouTube URLからビデオIDを抽出
+        return extractVideoId(decodedUrl);
+      }
+    } catch (error) {
+      console.warn('URLデコードに失敗しました:', error);
+    }
+  }
+
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /youtube\.com\/watch\?.*v=([^&\n?#]+)/

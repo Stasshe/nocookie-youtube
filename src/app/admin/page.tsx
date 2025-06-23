@@ -124,7 +124,7 @@ export default function AdminPage() {
         setIsAuthorized(false);
         setShowKeyInput(true);
         alert('セッションが期限切れになりました。再度アクセスキーを入力してください。');
-      }, 30 * 60 * 1000); // 30分
+      }, 5 * 60 * 1000); // 5分
       
       setKeyAuthTimeout(timeout);
     } else {

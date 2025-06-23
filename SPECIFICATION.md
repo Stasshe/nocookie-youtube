@@ -12,7 +12,7 @@ nocookie-youtubeを視聴し、その閲覧時間を管理者が管理する用�
 ユーザーが、見たいyoutubeのリンクを中央の入力ウィンドウに貼り付けると、即時でページの最前面最大のiframeでnocookieが表示されます。
 
 
-それぞれのユーザーの試聴時間を計測します。5分ごとにユーザーそれぞれのキーでfirebase realtime databaseに書き込みます。
+それぞれのユーザーの試聴時間を計測します。30秒ごとにユーザーそれぞれのキーでfirebase realtime databaseに書き込みます。
 firebase.rulesは、全てのユーザーに全てをallowです。
 
 

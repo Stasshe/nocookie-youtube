@@ -14,7 +14,7 @@ export default function Instructions() {
             <li>上部のアドレスバーに見たいYouTubeのURLを入力してください</li>
             <li>動画が自動的にnocookie形式で表示されます</li>
             <li>複数の動画を見たい場合は、新しいタブを開くことができます</li>
-            <li>視聴時間は自動的に記録され、5分ごとに保存されます</li>
+            <li>視聴時間は自動的に記録され、30秒ごとに保存されます</li>
           </ol>
         </section>
 
