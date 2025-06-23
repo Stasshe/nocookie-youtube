@@ -10,6 +10,7 @@ import UsernameModal from '@/components/UsernameModal';
 import TabBar from '@/components/TabBar';
 import AddressBar from '@/components/AddressBar';
 import Instructions from '@/components/Instructions';
+import CommentSection from '@/components/CommentSection';
 
 export default function Home() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function Home() {
   const [startTime, setStartTime] = useState<number>(0);
   const [iframeErrors, setIframeErrors] = useState<{[key: string]: boolean}>({});
   const [iframeLoaded, setIframeLoaded] = useState<{[key: string]: boolean}>({});
+  const [showComments, setShowComments] = useState<{[key: string]: boolean}>({});
 
   // ユーザー名をローカルストレージから読み込み
   useEffect(() => {
@@ -329,7 +331,7 @@ export default function Home() {
         remainingTime={remainingTime}
       />
       
-      <div className="flex-1 bg-white relative">
+      <div className="flex-1 bg-white relative overflow-hidden">
         {/* 全てのタブのiframeを表示（非表示のものも含む） */}
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -346,46 +348,74 @@ export default function Home() {
           return (
             <div
               key={tab.id}
-              className={`w-full h-full ${isActive ? 'block' : 'hidden'}`}
+              className={`w-full h-full ${isActive ? 'flex flex-col' : 'hidden'}`}
             >
-              <iframe
-                src={tab.url}
-                className="w-full h-full border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={`YouTube Video - ${tab.title}`}
-                onLoad={() => {
-                  setIframeLoaded(prev => ({ ...prev, [tab.id]: true }));
-                  setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
-                }}
-                onError={() => {
-                  setIframeErrors(prev => ({ ...prev, [tab.id]: true }));
-                  setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
-                }}
-              />
-              {iframeErrors[tab.id] && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
-                  <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-                    <div className="text-6xl mb-4">📺</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">動画の読み込みに失敗しました</h3>
-                    <p className="text-gray-600 mb-4">
-                      再生するまで、一時的にWiFiを切ってください
-                    </p>
-                    <button
-                      onClick={() => {
-                        setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
-                        setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
-                        // iframeを再読み込み
-                        const iframe = document.querySelector(`iframe[title="YouTube Video - ${tab.title}"]`) as HTMLIFrameElement;
-                        if (iframe) {
-                          iframe.src = iframe.src;
-                        }
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      再試行
-                    </button>
+              {/* iframeコンテナ */}
+              <div className={`${showComments[tab.id] ? 'h-3/5' : 'h-full'} relative transition-all duration-300`}>
+                <iframe
+                  src={tab.url}
+                  className="w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={`YouTube Video - ${tab.title}`}
+                  onLoad={() => {
+                    setIframeLoaded(prev => ({ ...prev, [tab.id]: true }));
+                    setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
+                  }}
+                  onError={() => {
+                    setIframeErrors(prev => ({ ...prev, [tab.id]: true }));
+                    setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
+                  }}
+                />
+                {iframeErrors[tab.id] && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+                    <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+                      <div className="text-6xl mb-4">📺</div>
+                      <h3 className="text-xl font-bold text-gray-800 mb-4">動画の読み込みに失敗しました</h3>
+                      <p className="text-gray-600 mb-4">
+                        再生するまで、一時的にWiFiを切ってください
+                      </p>
+                      <button
+                        onClick={() => {
+                          setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
+                          setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
+                          // iframeを再読み込み
+                          const iframe = document.querySelector(`iframe[title="YouTube Video - ${tab.title}"]`) as HTMLIFrameElement;
+                          if (iframe) {
+                            iframe.src = iframe.src;
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        再試行
+                      </button>
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* コメント表示ボタン */}
+              {isActive && (
+                <div className="bg-gray-50 border-t border-gray-200 px-4 py-2 flex justify-center">
+                  <button
+                    onClick={() => setShowComments(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>{showComments[tab.id] ? 'コメントを非表示' : 'コメントを表示'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* コメントセクション */}
+              {showComments[tab.id] && (
+                <div className="flex-1 overflow-y-auto">
+                  <CommentSection 
+                    videoUrl={tab.displayUrl || tab.url} 
+                    isVisible={showComments[tab.id]} 
+                  />
                 </div>
               )}
             </div>
