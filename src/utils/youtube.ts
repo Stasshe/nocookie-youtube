@@ -35,3 +35,9 @@ export const formatTime = (seconds: number): string => {
 export const isAdminUser = (username: string): boolean => {
   return username === process.env.ADMIN_USERNAME || username === 'Admin_Manager';
 };
+
+export const isValidAdminKey = (key: string): boolean => {
+  // クライアントサイドで環境変数を使用
+  const adminKey = process.env.NEXT_PUBLIC_ADMIN_ACCESS_KEY;
+  return adminKey ? key === adminKey : false;
+};
