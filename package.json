@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/react-modal": "^3.16.3",
     "autoprefixer": "^10.4.21",
+    "firebase": "^11.9.1",
     "next": "15.3.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-modal": "^3.16.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
