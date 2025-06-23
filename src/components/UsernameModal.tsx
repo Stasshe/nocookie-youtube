@@ -37,7 +37,7 @@ export default function UsernameModal({ isOpen, onSubmit }: UsernameModalProps) 
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="ユーザー名"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg text-black"
             autoFocus
             required
           />
@@ -49,7 +49,7 @@ export default function UsernameModal({ isOpen, onSubmit }: UsernameModalProps) 
           </button>
         </form>
         <p className="text-sm text-gray-500 mt-4 text-center">
-          管理者の場合は「Admin_Manager」と入力してください
+          管理者の場合はキーを入力してください
         </p>
       </div>
     </Modal>

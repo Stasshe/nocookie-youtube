@@ -21,7 +21,7 @@ export default function TabBar({ tabs, onTabSelect, onTabClose, onNewTab }: TabB
             }`}
             onClick={() => onTabSelect(tab.id)}
           >
-            <span className="truncate text-sm flex-1 mr-2">
+            <span className="truncate text-sm flex-1 mr-2 text-black">
               {tab.title || 'New Tab'}
             </span>
             {tabs.length > 1 && (
@@ -40,7 +40,7 @@ export default function TabBar({ tabs, onTabSelect, onTabClose, onNewTab }: TabB
       </div>
       <button
         onClick={onNewTab}
-        className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200"
+        className="px-4 py-2 text-black hover:text-gray-800 hover:bg-gray-200"
         title="新しいタブ"
       >
         +

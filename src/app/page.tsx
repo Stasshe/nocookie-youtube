@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tab, User } from '@/types';
 import { extractVideoId, generateNoCookieUrl, isAdminUser } from '@/utils/youtube';
 import { database } from '@/lib/firebase';
@@ -11,6 +12,7 @@ import AddressBar from '@/components/AddressBar';
 import Instructions from '@/components/Instructions';
 
 export default function Home() {
+  const router = useRouter();
   const [username, setUsername] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [tabs, setTabs] = useState<Tab[]>([]);
@@ -32,13 +34,6 @@ export default function Home() {
 
   // 管理者チェック
   const isAdmin = isAdminUser(username);
-
-  // 管理者の場合は管理画面にリダイレクト
-  useEffect(() => {
-    if (isAdmin && !isModalOpen) {
-      window.location.href = '/admin';
-    }
-  }, [isAdmin, isModalOpen]);
 
   // タブ初期化
   const initializeTabs = () => {
@@ -97,10 +92,7 @@ export default function Home() {
     setUsername(inputUsername);
     localStorage.setItem('youtube-username', inputUsername);
     setIsModalOpen(false);
-    
-    if (!isAdminUser(inputUsername)) {
-      initializeTabs();
-    }
+    initializeTabs();
   };
 
   const handleUrlSubmit = (url: string) => {
@@ -109,19 +101,26 @@ export default function Home() {
       return;
     }
 
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      alert('有効なYouTubeのURLを入力してください。');
-      return;
+    // 既にnocookieのURLの場合はそのまま使用
+    let finalUrl = url;
+    let displayUrl = url;
+    
+    if (!url.includes('youtube-nocookie.com')) {
+      const videoId = extractVideoId(url);
+      if (!videoId) {
+        alert('有効なYouTubeのURLを入力してください。');
+        return;
+      }
+      finalUrl = generateNoCookieUrl(videoId);
+      displayUrl = url; // 元のURLを表示用に保持
     }
 
-    const noCookieUrl = generateNoCookieUrl(videoId);
     const activeTab = tabs.find(tab => tab.id === activeTabId);
     
     if (activeTab) {
       const updatedTabs = tabs.map(tab =>
         tab.id === activeTabId
-          ? { ...tab, url: noCookieUrl, title: `YouTube Video` }
+          ? { ...tab, url: finalUrl, title: `YouTube Video`, displayUrl: displayUrl }
           : tab
       );
       setTabs(updatedTabs);
@@ -189,7 +188,7 @@ export default function Home() {
       />
       
       <AddressBar
-        currentUrl={activeTab?.url || ''}
+        currentUrl={activeTab?.displayUrl || activeTab?.url || ''}
         onUrlSubmit={handleUrlSubmit}
         remainingTime={remainingTime}
       />
@@ -207,7 +206,7 @@ export default function Home() {
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-8">
               <h2 className="text-2xl font-bold text-red-600 mb-4">制限時間終了</h2>
-              <p className="text-gray-600">
+              <p className="text-black">
                 あなたの視聴制限時間に達しました。<br />
                 管理者にお問い合わせください。
               </p>
@@ -219,6 +218,19 @@ export default function Home() {
           </div>
         )}
       </div>
+      
+      {/* 管理者用フローティングボタン */}
+      {isAdmin && (
+        <button
+          onClick={() => router.push('/admin')}
+          className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-colors z-50"
+          title="管理者ダッシュボード"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

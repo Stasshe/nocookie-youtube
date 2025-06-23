@@ -48,17 +48,17 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">管理者ダッシュボード</h1>
+    <div className="max-w-6xl mx-auto p-6 text-black">
+      <h1 className="text-3xl font-bold mb-8 text-black">管理者ダッシュボード</h1>
       
       {/* 制限時間設定セクション */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">制限時間設定</h2>
+        <h2 className="text-xl font-semibold mb-4 text-black">制限時間設定</h2>
         <div className="flex items-center space-x-4">
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           >
             <option value="">ユーザーを選択</option>
             {Object.keys(users).map((username) => (
@@ -72,7 +72,7 @@ export default function AdminDashboard() {
             value={newTimeLimit}
             onChange={(e) => setNewTimeLimit(Number(e.target.value))}
             min="1"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-20"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-20 text-black"
           />
           <span className="text-gray-600">分</span>
           <button
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
 
       {/* ユーザー一覧 */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <h2 className="text-xl font-semibold p-6 border-b border-gray-200 text-gray-700">
+        <h2 className="text-xl font-semibold p-6 border-b border-gray-200 text-black">
           ユーザー視聴状況
         </h2>
         <div className="overflow-x-auto">

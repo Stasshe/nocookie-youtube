@@ -2,6 +2,7 @@ export interface Tab {
   id: string;
   title: string;
   url: string;
+  displayUrl?: string; // 表示用の元URL
   active: boolean;
 }
 

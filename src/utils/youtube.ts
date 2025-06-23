@@ -15,7 +15,7 @@ export const extractVideoId = (url: string): string | null => {
 };
 
 export const generateNoCookieUrl = (videoId: string): string => {
-  return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+  return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1`;
 };
 
 export const formatTime = (seconds: number): string => {

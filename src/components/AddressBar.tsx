@@ -35,15 +35,15 @@ export default function AddressBar({ currentUrl, onUrlSubmit, remainingTime }: A
   };
 
   return (
-    <div className="flex items-center bg-white border-b border-gray-300 px-4 py-2">
+    <div className="flex items-center bg-white border-b border-gray-300 px-4 py-1">
       <form onSubmit={handleSubmit} className="flex-1 flex items-center">
-        <div className="flex-1 flex items-center bg-gray-50 rounded-lg px-3 py-2 border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+        <div className="flex-1 flex items-center bg-gray-50 rounded-lg px-3 py-1 border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
           <input
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="YouTubeのURLを入力してください"
-            className="flex-1 bg-transparent outline-none text-sm"
+            className="flex-1 bg-transparent outline-none text-sm text-black placeholder-gray-500"
           />
           <button
             type="submit"
