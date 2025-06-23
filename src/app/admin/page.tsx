@@ -86,6 +86,7 @@ export default function AdminPage() {
         clearTimeout(keyAuthTimeout);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUsernameSubmit = (inputUsername: string) => {

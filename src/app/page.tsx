@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Tab, User } from '@/types';
+import { Tab } from '@/types';
 import { extractVideoId, generateNoCookieUrl, isAdminUser } from '@/utils/youtube';
 import { database } from '@/lib/firebase';
 import { ref, set, onValue } from 'firebase/database';
