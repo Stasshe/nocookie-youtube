@@ -21,6 +21,8 @@ export default function Home() {
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [isWatching, setIsWatching] = useState<boolean>(false);
   const [startTime, setStartTime] = useState<number>(0);
+  const [iframeError, setIframeError] = useState<boolean>(false);
+  const [iframeLoaded, setIframeLoaded] = useState<boolean>(false);
 
   // ユーザー名をローカルストレージから読み込み
   useEffect(() => {
@@ -118,6 +120,10 @@ export default function Home() {
     const activeTab = tabs.find(tab => tab.id === activeTabId);
     
     if (activeTab) {
+      // エラー状態をリセット
+      setIframeError(false);
+      setIframeLoaded(false);
+      
       const updatedTabs = tabs.map(tab =>
         tab.id === activeTabId
           ? { ...tab, url: finalUrl, title: `YouTube Video`, displayUrl: displayUrl }
@@ -170,7 +176,30 @@ export default function Home() {
     setTabs(filteredTabs);
   };
 
+  const handleIframeLoad = () => {
+    setIframeLoaded(true);
+    setIframeError(false);
+  };
+
+  const handleIframeError = () => {
+    setIframeError(true);
+    setIframeLoaded(false);
+  };
+
   const activeTab = tabs.find(tab => tab.active);
+
+  // iframeの読み込みタイムアウト処理
+  useEffect(() => {
+    if (activeTab?.url && !activeTab.url.includes('Instructions')) {
+      const timer = setTimeout(() => {
+        if (!iframeLoaded) {
+          setIframeError(true);
+        }
+      }, 10000); // 10秒でタイムアウト
+
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab?.url, iframeLoaded]);
   const remainingTime = timeLimit ? timeLimit - watchTime : undefined;
   const isOverLimit = remainingTime !== undefined && remainingTime <= 0;
 
@@ -195,13 +224,42 @@ export default function Home() {
       
       <div className="flex-1 bg-white">
         {activeTab?.url && !isOverLimit ? (
-          <iframe
-            src={activeTab.url}
-            className="w-full h-full border-none"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube Video"
-          />
+          <div className="relative w-full h-full">
+            <iframe
+              src={activeTab.url}
+              className="w-full h-full border-none"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube Video"
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+            />
+            {iframeError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+                <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+                  <div className="text-6xl mb-4">📺</div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">動画の読み込みに失敗しました</h3>
+                  <p className="text-gray-600 mb-4">
+                    再生するまで、一時的にWiFiを切ってください
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIframeError(false);
+                      setIframeLoaded(false);
+                      // iframeを再読み込み
+                      const iframe = document.querySelector('iframe');
+                      if (iframe) {
+                        iframe.src = iframe.src;
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    再試行
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : isOverLimit ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-8">
