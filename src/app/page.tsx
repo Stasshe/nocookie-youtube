@@ -132,7 +132,7 @@ export default function Home() {
     return () => unsubscribe();
   }, [username, isAdmin]);
 
-  // 視聴時間の即座保存と5分ごとの更新
+  // 視聴時間の即座保存と30秒ごとの更新
   useEffect(() => {
     if (!username || isAdmin || !isWatching) return;
 
@@ -170,11 +170,11 @@ export default function Home() {
     console.log('🎬 視聴開始 - 5分を即座に加算します');
     saveWatchTime(5 * 60); // 5分（300秒）を即座に加算
 
-    // その後は5分ごとに更新
+    // その後は30秒ごとに更新
     const interval = setInterval(() => {
-      console.log('⏰ 定期更新 - 5分を加算します');
-      saveWatchTime(5 * 60); // 5分ごとに5分加算
-    }, 5 * 60 * 1000); // 5分
+      console.log('⏰ 定期更新 - 30秒を加算します');
+      saveWatchTime(30); // 30秒ごとに30秒加算
+    }, 30 * 1000); // 30秒
 
     return () => {
       clearInterval(interval);
