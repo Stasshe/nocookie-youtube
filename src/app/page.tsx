@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Tab } from '@/types';
 import { extractVideoId, generateNoCookieUrl, isAdminUser } from '@/utils/youtube';
 import { database } from '@/lib/firebase';
-import { ref, set, onValue } from 'firebase/database';
+import { ref, set, onValue, push } from 'firebase/database';
 import UsernameModal from '@/components/UsernameModal';
 import TabBar from '@/components/TabBar';
 import AddressBar from '@/components/AddressBar';
@@ -21,8 +21,8 @@ export default function Home() {
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [isWatching, setIsWatching] = useState<boolean>(false);
   const [startTime, setStartTime] = useState<number>(0);
-  const [iframeError, setIframeError] = useState<boolean>(false);
-  const [iframeLoaded, setIframeLoaded] = useState<boolean>(false);
+  const [iframeErrors, setIframeErrors] = useState<{[key: string]: boolean}>({});
+  const [iframeLoaded, setIframeLoaded] = useState<{[key: string]: boolean}>({});
 
   // ユーザー名をローカルストレージから読み込み
   useEffect(() => {
@@ -53,48 +53,106 @@ export default function Home() {
   useEffect(() => {
     if (!username || isAdmin) return;
 
+    console.log('ユーザーデータの監視を開始:', username);
     const userRef = ref(database, `users/${username}`);
     const unsubscribe = onValue(userRef, (snapshot) => {
       const userData = snapshot.val();
+      console.log('Firebaseからユーザーデータを取得:', userData);
+      
       if (userData) {
         setWatchTime(userData.watchTime || 0);
         setTimeLimit(userData.timeLimit ? userData.timeLimit * 60 : null); // 分を秒に変換
+        console.log('視聴時間を更新:', userData.watchTime || 0, '秒');
+      } else {
+        // 初回ユーザーの場合、初期データを作成
+        console.log('初回ユーザーです。初期データを作成します。');
+        const initialData = {
+          username,
+          watchTime: 0,
+          lastActive: Date.now(),
+          timeLimit: null
+        };
+        
+        set(userRef, initialData).then(() => {
+          console.log('初期ユーザーデータを作成しました:', initialData);
+          setWatchTime(0);
+          setTimeLimit(null);
+        }).catch((error) => {
+          console.error('初期ユーザーデータの作成に失敗しました:', error);
+        });
       }
     });
 
     return () => unsubscribe();
   }, [username, isAdmin]);
 
-  // 視聴時間の更新（5分ごと）
+  // 視聴時間の即座保存と5分ごとの更新
   useEffect(() => {
     if (!username || isAdmin || !isWatching) return;
 
-    const interval = setInterval(() => {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const sessionTime = currentTime - startTime;
-      const newWatchTime = watchTime + sessionTime;
+    console.log('視聴時間更新処理を開始します。現在の視聴時間:', watchTime);
 
-      // Firebaseに保存
+    // 視聴開始時に即座に5分分を加算して保存
+    const saveWatchTime = (addTime: number = 0) => {
+      // 現在のwatchTimeを直接Firebaseから取得して更新
       const userRef = ref(database, `users/${username}`);
-      set(userRef, {
-        username,
-        watchTime: newWatchTime,
-        lastActive: Date.now(),
-        timeLimit: timeLimit ? timeLimit / 60 : null // 秒を分に変換
+      
+      // まずは現在の値を取得
+      const currentTimeRef = ref(database, `users/${username}/watchTime`);
+      
+      setWatchTime(prevWatchTime => {
+        const newWatchTime = prevWatchTime + addTime;
+        console.log('視聴時間を更新中:', prevWatchTime, '+', addTime, '=', newWatchTime);
+        
+        // Firebaseに保存
+        set(userRef, {
+          username,
+          watchTime: newWatchTime,
+          lastActive: Date.now(),
+          timeLimit: timeLimit ? timeLimit / 60 : null
+        }).then(() => {
+          console.log('✅ 視聴時間を保存しました:', newWatchTime, '秒');
+        }).catch((error) => {
+          console.error('❌ 視聴時間の保存に失敗しました:', error);
+        });
+        
+        return newWatchTime;
       });
+    };
 
-      setWatchTime(newWatchTime);
-      setStartTime(currentTime);
+    // 視聴開始時に即座に5分加算
+    console.log('🎬 視聴開始 - 5分を即座に加算します');
+    saveWatchTime(5 * 60); // 5分（300秒）を即座に加算
+
+    // その後は5分ごとに更新
+    const interval = setInterval(() => {
+      console.log('⏰ 定期更新 - 5分を加算します');
+      saveWatchTime(5 * 60); // 5分ごとに5分加算
     }, 5 * 60 * 1000); // 5分
 
-    return () => clearInterval(interval);
-  }, [username, isAdmin, isWatching, watchTime, startTime, timeLimit]);
+    return () => {
+      clearInterval(interval);
+      console.log('🛑 視聴時間更新のタイマーを停止しました');
+    };
+  }, [username, isAdmin, isWatching, timeLimit]);
 
   const handleUsernameSubmit = (inputUsername: string) => {
     setUsername(inputUsername);
     localStorage.setItem('youtube-username', inputUsername);
     setIsModalOpen(false);
     initializeTabs();
+    
+    // Firebase接続テスト
+    console.log('🔧 Firebase接続テストを実行します');
+    const testRef = ref(database, `test/${inputUsername}`);
+    set(testRef, {
+      test: true,
+      timestamp: Date.now()
+    }).then(() => {
+      console.log('✅ Firebase接続テスト成功');
+    }).catch((error) => {
+      console.error('❌ Firebase接続テスト失敗:', error);
+    });
   };
 
   const handleUrlSubmit = (url: string) => {
@@ -121,8 +179,8 @@ export default function Home() {
     
     if (activeTab) {
       // エラー状態をリセット
-      setIframeError(false);
-      setIframeLoaded(false);
+      setIframeErrors(prev => ({ ...prev, [activeTabId]: false }));
+      setIframeLoaded(prev => ({ ...prev, [activeTabId]: false }));
       
       const updatedTabs = tabs.map(tab =>
         tab.id === activeTabId
@@ -133,6 +191,7 @@ export default function Home() {
       
       // 動画視聴開始
       if (!isWatching) {
+        console.log('動画視聴を開始します:', finalUrl);
         setIsWatching(true);
         setStartTime(Math.floor(Date.now() / 1000));
       }
@@ -154,12 +213,25 @@ export default function Home() {
   };
 
   const handleTabSelect = (tabId: string) => {
+    // タブが既にアクティブな場合は何もしない
+    if (activeTabId === tabId) return;
+    
     const updatedTabs = tabs.map(tab => ({
       ...tab,
       active: tab.id === tabId
     }));
     setTabs(updatedTabs);
     setActiveTabId(tabId);
+    
+    // アドレスバーの更新を確実にするため、強制的に再レンダリングをトリガー
+    // 新しいアクティブタブの情報を取得してアドレスバーに反映
+    const newActiveTab = updatedTabs.find(tab => tab.id === tabId);
+    if (newActiveTab) {
+      // アドレスバーが確実に更新されるように少し遅延を入れる
+      setTimeout(() => {
+        // 必要に応じてここで追加の処理を行う
+      }, 0);
+    }
   };
 
   const handleTabClose = (tabId: string) => {
@@ -169,37 +241,38 @@ export default function Home() {
     const wasActive = tabs.find(tab => tab.id === tabId)?.active;
 
     if (wasActive && filteredTabs.length > 0) {
-      filteredTabs[0].active = true;
-      setActiveTabId(filteredTabs[0].id);
+      // 最初のタブをアクティブにする
+      const updatedTabs = filteredTabs.map((tab, index) => ({
+        ...tab,
+        active: index === 0
+      }));
+      setTabs(updatedTabs);
+      setActiveTabId(updatedTabs[0].id);
+    } else {
+      setTabs(filteredTabs);
     }
-
-    setTabs(filteredTabs);
   };
 
-  const handleIframeLoad = () => {
-    setIframeLoaded(true);
-    setIframeError(false);
-  };
-
-  const handleIframeError = () => {
-    setIframeError(true);
-    setIframeLoaded(false);
-  };
-
-  const activeTab = tabs.find(tab => tab.active);
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
 
   // iframeの読み込みタイムアウト処理
   useEffect(() => {
-    if (activeTab?.url && !activeTab.url.includes('Instructions')) {
-      const timer = setTimeout(() => {
-        if (!iframeLoaded) {
-          setIframeError(true);
-        }
-      }, 10000); // 10秒でタイムアウト
+    const timeouts: { [key: string]: NodeJS.Timeout } = {};
+    
+    tabs.forEach(tab => {
+      if (tab.url && !tab.url.includes('Instructions')) {
+        timeouts[tab.id] = setTimeout(() => {
+          if (!iframeLoaded[tab.id]) {
+            setIframeErrors(prev => ({ ...prev, [tab.id]: true }));
+          }
+        }, 10000); // 10秒でタイムアウト
+      }
+    });
 
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab?.url, iframeLoaded]);
+    return () => {
+      Object.values(timeouts).forEach(timeout => clearTimeout(timeout));
+    };
+  }, [tabs, iframeLoaded]);
   const remainingTime = timeLimit ? timeLimit - watchTime : undefined;
   const isOverLimit = remainingTime !== undefined && remainingTime <= 0;
 
@@ -222,46 +295,72 @@ export default function Home() {
         remainingTime={remainingTime}
       />
       
-      <div className="flex-1 bg-white">
-        {activeTab?.url && !isOverLimit ? (
-          <div className="relative w-full h-full">
-            <iframe
-              src={activeTab.url}
-              className="w-full h-full border-none"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="YouTube Video"
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-            />
-            {iframeError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
-                <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-                  <div className="text-6xl mb-4">📺</div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">動画の読み込みに失敗しました</h3>
-                  <p className="text-gray-600 mb-4">
-                    再生するまで、一時的にWiFiを切ってください
-                  </p>
-                  <button
-                    onClick={() => {
-                      setIframeError(false);
-                      setIframeLoaded(false);
-                      // iframeを再読み込み
-                      const iframe = document.querySelector('iframe');
-                      if (iframe) {
-                        iframe.src = iframe.src;
-                      }
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    再試行
-                  </button>
-                </div>
+      <div className="flex-1 bg-white relative">
+        {/* 全てのタブのiframeを表示（非表示のものも含む） */}
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTabId;
+          const hasUrl = tab.url && !isOverLimit;
+          
+          if (!hasUrl) {
+            return isActive ? (
+              <div key={tab.id} className="p-8 w-full h-full">
+                <Instructions />
               </div>
-            )}
-          </div>
-        ) : isOverLimit ? (
-          <div className="flex items-center justify-center h-full">
+            ) : null;
+          }
+          
+          return (
+            <div
+              key={tab.id}
+              className={`w-full h-full ${isActive ? 'block' : 'hidden'}`}
+            >
+              <iframe
+                src={tab.url}
+                className="w-full h-full border-none"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={`YouTube Video - ${tab.title}`}
+                onLoad={() => {
+                  setIframeLoaded(prev => ({ ...prev, [tab.id]: true }));
+                  setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
+                }}
+                onError={() => {
+                  setIframeErrors(prev => ({ ...prev, [tab.id]: true }));
+                  setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
+                }}
+              />
+              {iframeErrors[tab.id] && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+                  <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+                    <div className="text-6xl mb-4">📺</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">動画の読み込みに失敗しました</h3>
+                    <p className="text-gray-600 mb-4">
+                      再生するまで、一時的にWiFiを切ってください
+                    </p>
+                    <button
+                      onClick={() => {
+                        setIframeErrors(prev => ({ ...prev, [tab.id]: false }));
+                        setIframeLoaded(prev => ({ ...prev, [tab.id]: false }));
+                        // iframeを再読み込み
+                        const iframe = document.querySelector(`iframe[title="YouTube Video - ${tab.title}"]`) as HTMLIFrameElement;
+                        if (iframe) {
+                          iframe.src = iframe.src;
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      再試行
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        
+        {/* 制限時間超過の表示 */}
+        {isOverLimit && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white">
             <div className="text-center p-8">
               <h2 className="text-2xl font-bold text-red-600 mb-4">制限時間終了</h2>
               <p className="text-black">
@@ -269,10 +368,6 @@ export default function Home() {
                 管理者にお問い合わせください。
               </p>
             </div>
-          </div>
-        ) : (
-          <div className="p-8">
-            <Instructions />
           </div>
         )}
       </div>
