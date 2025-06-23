@@ -1,15 +1,21 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+'use client';export default function CommentSection({ videoUrl, isVisible, isFullscreen, onToggleFullscreen }: CommentSectionProps) {
+  const [comments, setComments] = useState<YouTubeComment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [hasMoreComments, setHasMoreComments] = useState(true);port { useState, useEffect } from 'react';
 import { YouTubeComment, fetchYouTubeComments, formatTimeAgo } from '@/utils/commentApi';
 import { extractVideoId } from '@/utils/youtube';
 
 interface CommentSectionProps {
   videoUrl: string;
   isVisible: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
-export default function CommentSection({ videoUrl, isVisible }: CommentSectionProps) {
+export default function CommentSection({ videoUrl, isVisible, isFullscreen = false, onToggleFullscreen }: CommentSectionProps) {
   const [comments, setComments] = useState<YouTubeComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,19 +52,59 @@ export default function CommentSection({ videoUrl, isVisible }: CommentSectionPr
   if (!isVisible) return null;
 
   return (
-    <div className="bg-white border-t border-gray-200">
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
+    <div className={`bg-white border-t border-gray-200 ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+      <div className={`${isFullscreen ? 'h-full flex flex-col' : ''} max-w-4xl mx-auto p-4 ${isFullscreen ? 'max-w-none p-6' : ''}`}>
+        <div className={`flex items-center justify-between mb-6 ${isFullscreen ? 'border-b border-gray-200 pb-4' : ''}`}>
+          <h3 className={`font-semibold text-gray-900 ${isFullscreen ? 'text-2xl' : 'text-lg'}`}>
             コメント ({comments.length})
           </h3>
-          <button
-            onClick={loadComments}
-            disabled={loading}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
-          >
-            {loading ? '読み込み中...' : '更新'}
-          </button>
+          <div className="flex items-center space-x-2">
+            {onToggleFullscreen && (
+              <button
+                onClick={onToggleFullscreen}
+                className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-900 text-white rounded-md transition-colors flex items-center space-x-1 font-medium shadow-sm"
+                title={isFullscreen ? '元のサイズに戻す' : '全画面表示'}
+              >
+                {isFullscreen ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>閉じる</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <span>全画面</span>
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              onClick={loadComments}
+              disabled={loading}
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:bg-gray-400 font-medium shadow-sm"
+            >
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>読み込み中</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>更新</span>
+                </div>
+              )}
+            </button>
+          </div>
         </div>
 
         {loading && (
@@ -79,19 +125,21 @@ export default function CommentSection({ videoUrl, isVisible }: CommentSectionPr
         )}
 
         {!loading && !error && comments.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            コメントが見つかりませんでした
+          <div className={`text-center py-8 text-gray-500 ${isFullscreen ? 'py-16' : ''}`}>
+            <div className={`${isFullscreen ? 'text-lg' : 'text-base'}`}>
+              コメントが見つかりませんでした
+            </div>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className={`space-y-4 ${isFullscreen ? 'flex-1 overflow-y-auto' : ''}`}>
           {comments.map((comment) => (
-            <div key={comment.id} className="flex space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div key={comment.id} className={`flex space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors ${isFullscreen ? 'p-4 hover:bg-gray-100' : ''}`}>
               <div className="flex-shrink-0">
                 <img
                   src={comment.authorProfileImageUrl}
                   alt={comment.authorDisplayName}
-                  className="w-10 h-10 rounded-full"
+                  className={`rounded-full ${isFullscreen ? 'w-12 h-12' : 'w-10 h-10'}`}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iOCIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTIgMzhDMTIgMzAuOCAxNy44IDI1IDI1IDI1SDIzQzMwLjIgMjUgMzYgMzAuOCAzNiAzOFY0MkMzNiA0My4xIDM1LjEgNDQgMzQgNDRIMTRDMTIuOSA0NCAxMiA0My4xIDEyIDQyVjM4WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
@@ -113,7 +161,7 @@ export default function CommentSection({ videoUrl, isVisible }: CommentSectionPr
                   </span>
                 </div>
                 <div 
-                  className="text-sm text-gray-700 leading-relaxed"
+                  className={`text-gray-700 leading-relaxed ${isFullscreen ? 'text-base' : 'text-sm'}`}
                   dangerouslySetInnerHTML={{
                     __html: comment.textDisplay
                       .replace(/\n/g, '<br>')

@@ -25,6 +25,7 @@ export default function Home() {
   const [iframeErrors, setIframeErrors] = useState<{[key: string]: boolean}>({});
   const [iframeLoaded, setIframeLoaded] = useState<{[key: string]: boolean}>({});
   const [showComments, setShowComments] = useState<{[key: string]: boolean}>({});
+  const [commentsFullscreen, setCommentsFullscreen] = useState<{[key: string]: boolean}>({});
 
   // ユーザー名をローカルストレージから読み込み
   useEffect(() => {
@@ -414,7 +415,9 @@ export default function Home() {
                 <div className="flex-1 overflow-y-auto">
                   <CommentSection 
                     videoUrl={tab.displayUrl || tab.url} 
-                    isVisible={showComments[tab.id]} 
+                    isVisible={showComments[tab.id]}
+                    isFullscreen={commentsFullscreen[tab.id]}
+                    onToggleFullscreen={() => setCommentsFullscreen(prev => ({ ...prev, [tab.id]: !prev[tab.id] }))}
                   />
                 </div>
               )}
