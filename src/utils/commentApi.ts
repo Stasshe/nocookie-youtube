@@ -48,6 +48,7 @@ export const fetchYouTubeComments = async (videoId: string): Promise<YouTubeComm
         if (errorData.error?.errors?.[0]?.reason === 'commentsDisabled') {
           throw new Error('この動画はコメントが無効になっています');
         }
+        alert('API制限に達しました。しばらく待ってから再試行してください。');
         throw new Error('API制限に達しました。しばらく待ってから再試行してください。');
       }
       throw new Error(`API error: ${response.status}`);
